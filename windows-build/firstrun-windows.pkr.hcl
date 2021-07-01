@@ -9,7 +9,7 @@ packer {
 
 variable "region" {
   type    = string
-  default = "cn-north-1"
+  default = "cn-northwest-1"
 }
 
 locals { timestamp = regex_replace(timestamp(), "[- TZ:]", "") }
@@ -25,30 +25,32 @@ source "amazon-ebs" "firstrun-windows" {
   source_ami_filter {
     filters = {
       # name                = "tio_base_win2016_standard-*"
-      name                = "*Windows_Server-2016-English-Full-Base*"
+      name                = "*Windows_Server-2019-English-Full-Base*"
       root-device-type    = "ebs"
       virtualization-type = "hvm"
     }
     most_recent = true
     owners      = ["016951021795"]
   }
-  #vpc_filter {
-  #  filters = {
-  #    "tag:Name": "SDMP-VPC-DEV",
-  #    "isDefault": "false",
-  #    "cidr": "10.131.229.0/24"
-  #  }
-  #}
-  #subnet_filter {
-  #  filters = {
-  #    "tag:Name": "SDMP.dev-backend.public_subnet*"
-  #  }
-  #  random = true
-  #}  
+  vpc_filter {
+    filters = {
+      "tag:Name": "SDMP-VPC",
+      "isDefault": "false",
+      "cidr": "10.131.228.0/24"
+    }
+  }
+  subnet_filter {
+    filters = {
+      "tag:Name": "SDMP.test-backend.public_subnet*"
+    }
+    random = true
+  }  
   user_data_file = "./bootstrap_win.txt"
   associate_public_ip_address = true
   winrm_password = "SuperS3cr3t!!!!"
   winrm_username = "Administrator"
+  winrm_timeout = "1h5m2s"
+  winrm_use_ssl = true
 }
 
 # a build block invokes sources and runs provisioning steps on them.
@@ -58,6 +60,7 @@ build {
   provisioner "powershell" {
     environment_vars = ["DEVOPS_LIFE_IMPROVER=PACKER"]
     inline           = ["Write-Host \"HELLO NEW USER; WELCOME TO $Env:DEVOPS_LIFE_IMPROVER\"", "Write-Host \"You need to use backtick escapes when using\"", "Write-Host \"characters such as DOLLAR`$ directly in a command\"", "Write-Host \"or in your own scripts.\""]
+    
   }
   provisioner "windows-restart" {
   }
